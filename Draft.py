@@ -3,8 +3,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import scipy.constants as spc
 import os
+from matplotlib import animation
 
-mpl.rcParams['text.usetex'] = True 
+mpl.rcParams['text.usetex'] = True
 mpl.rcParams['text.latex.preamble'] = [r'\usepackage[cm]{sfmath}', r'\usepackage{braket}']
 mpl.rcParams['font.family'] = 'sans-serif'
 mpl.rcParams['font.sans-serif'] = 'cm'
@@ -16,10 +17,7 @@ mpl.rcParams["savefig.format"] = 'eps'
 
 
 def exchange(J,s1,s2):
-    if s1 == s2:
-        spprod = 0.25*spc.hbar**2
-    else:
-        spprod = -0.75*spc.hbar**2
+    spprod = np.cos(s1-s2)#*(spc.hbar**2)
     Eex=-J*spprod
     return Eex
 
@@ -28,61 +26,98 @@ def anis(k,th):
     return Ek
 
 def diff(Eb,Ea):
-    delE = Eb-Ea
+    delE = np.abs(Eb-Ea)
     return delE
 
 def Prob(dE,T):
-    P=np.exp(-dE/(spc.k*T))
+    p=np.exp(-dE/(T*spc.k))
     test = np.random.random()
-    if test < P:
+    if test < p:
         return 1
     else:
         return 0
 
-J=50
-k=1
+J=100e-25
+k=2e-25
 T = 1
-limit = 9
-lol = limit**2
+limit = 11
+lol = 5000
 
-anggrid = 2*np.pi*np.random.random((limit,limit))
-spingrid = np.random.randint(0,2, size=(limit,limit)) - 0.5
+anggrid = 2*np.pi*np.random.random((limit,limit)) - np.pi
+#spingrid = np.random.randint(0,2, size=(limit,limit)) - 0.5
+angtens = np.zeros((limit,limit,lol))
+for j in range(0, lol):
+	for h in range(0, limit**2):
+		locr = np.random.randint(1,limit-1)
+		locc = np.random.randint(1,limit-1)
+	
+		exchangelist = np.zeros((4))
+		for i in range(0,4):
+			if (i % 2) == 0:
+				exchangelist[i] = exchange(J, anggrid[locr,locc], anggrid[locr+(i-1),locc])
+			else:
+				exchangelist[i] = exchange(J, anggrid[locr,locc], anggrid[locr,locc+(i-2)])
+		
+		an = anis(k, anggrid[locr,locc])
+		Es = an + np.sum(exchangelist)
+		
+		randturn = 2*np.pi*np.random.normal(0,0.1) #- np.pi*0.2
+		
+		exchangelist2 = np.zeros((4))
+		for i in range(0,4):
+			if (i % 2) == 0:
+				exchangelist2[i] = exchange(J, (anggrid[locr,locc]+randturn) % (2*np.pi), anggrid[locr+(i-1),locc])
+			else:
+				exchangelist2[i] = exchange(J, (anggrid[locr,locc]+randturn) % (2*np.pi), anggrid[locr,locc+(i-2)])
+	
+		an2 = anis(k, (anggrid[locr,locc]+randturn) % (2*np.pi))
+		Ef = an2 + np.sum(exchangelist2)
+	
+		delE = diff(Es,Ef)
+	
+		turn = Prob(delE,T)
+	
+		if turn == 1:
+			anggrid[locr,locc] = anggrid[locr,locc] + randturn
+		else:
+			pass
+	angtens[:,:,j] = anggrid
 
-locr = np.random.randint(1,limit-1)
-locc = np.random.randint(1,limit-1)
 
-exchangelist = np.zeros((4))
-for i in range(0,4):
-    if (i % 2) == 0:
-        exchangelist[i] = exchange(J, spingrid[locr,locc], spingrid[locr+(i-1),locc])
-    else:
-        exchangelist[i] = exchange(J, spingrid[locr,locc], spingrid[locr,locc+(i-2)])
+accangtens = angtens[1:(limit-1), 1:(limit-1), :]
 
-an = anis(k, anggrid[locr,locc])
-Es = an + np.sum(exchangelist)
+X, Y = np.meshgrid(np.arange(0,9), np.arange(0,9))
 
-randturn = (2*np.pi*np.random.random()) % (2*np.pi)
+scale = 1
 
+angx = scale*np.cos(accangtens)
+angy = scale*np.sin(accangtens)
 
-exchangelist2 = np.zeros((4))
-for i in range(0,4):
-    if (i % 2) == 0:
-        exchangelist2[i] = exchange(J, spingrid[locr,locc], spingrid[locr+(i-1),locc])
-    else:
-        exchangelist2[i] = exchange(J, spingrid[locr,locc], spingrid[locr,locc+(i-2)])
+fig, ax = plt.subplots(1,1)
+Q = ax.quiver(X, Y, angx[:,:,0], angy[:,:,0], pivot='mid', color='k', units='inches')
 
-an2 = anis(k, anggrid[locr,locc])
-Ef = an2 + np.sum(exchangelist2)
+ax.set_xlim(-1, 9)
+ax.set_ylim(-1, 9)
 
-delE = diff(Es,Ef)
+def update_quiver(num, Q, X, Y):
+	
+	U = angx[:, :, num]
+	V = angy[:, :, num]
+	Q.set_UVC(U, V)
+	
+	if round(100*num/lol, 2) % 1 == 0:
+		print(str(round(100*num/lol, 0)) + '%')
+	else:
+		pass
+	
+	return Q,
 
-turn = Prob(delE,T)
+# you need to set blit=False, or the first set of arrows never gets
+# cleared on subsequent frames
+anim = animation.FuncAnimation(fig, update_quiver, frames=lol, fargs=(Q, X, Y), 
+                               interval=1, blit=False)
 
-if turn == 1:
-    anggrid[locr,locc] = anggrid[locr,locc] + randturn
-else:
-    pass
-
+anim.save(os.getcwd() + r'\AFM3.mp4', fps=60, extra_args=['-vcodec', 'libx264'], savefig_kwargs={'pad_inches':1})
 
 
 
