@@ -17,31 +17,35 @@ mpl.rcParams["savefig.format"] = 'eps'
 
 
 def exchange(J,s1,s2):
-    spprod = np.cos(s1-s2)#*(spc.hbar**2)
-    Eex=-J*spprod
-    return Eex
+	spprod = np.cos(s2-s1)# (s1-s2) #*(spc.hbar**2)
+	Eex=-J*spprod
+
+	return Eex
 
 def anis(k,th):
-    Ek = -k*(np.sin(th))**2
-    return Ek
+	Ek = -k*(np.sin(th))**2
+
+	return Ek
 
 def diff(Eb,Ea):
-    delE = np.abs(Eb-Ea)
-    return delE
+	delE = Eb-Ea
+	print(str(delE))
+	return delE
 
 def Prob(dE,T):
-    p=np.exp(-dE/(T*spc.k))
-    test = np.random.random()
-    if test < p:
-        return 1
-    else:
-        return 0
+	p=np.exp(-dE/(T*spc.k))
+	print(str(p))
+	test = np.random.random()
+	if test < p:
+		return 1
+	else:
+		return 0
 
-J=100e-25
-k=2e-25
-T = 1
+J=-100
+k=2
+T = 10
 limit = 11
-lol = 5000
+lol = 500
 
 anggrid = 2*np.pi*np.random.random((limit,limit)) - np.pi
 #spingrid = np.random.randint(0,2, size=(limit,limit)) - 0.5
@@ -66,11 +70,12 @@ for j in range(0, lol):
 		exchangelist2 = np.zeros((4))
 		for i in range(0,4):
 			if (i % 2) == 0:
-				exchangelist2[i] = exchange(J, (anggrid[locr,locc]+randturn) % (2*np.pi), anggrid[locr+(i-1),locc])
+				exchangelist2[i] = exchange(J, (anggrid[locr,locc]+randturn), anggrid[locr+(i-1),locc])
 			else:
-				exchangelist2[i] = exchange(J, (anggrid[locr,locc]+randturn) % (2*np.pi), anggrid[locr,locc+(i-2)])
+				exchangelist2[i] = exchange(J, (anggrid[locr,locc]+randturn), anggrid[locr,locc+(i-2)])
 	
-		an2 = anis(k, (anggrid[locr,locc]+randturn) % (2*np.pi))
+		an2 = anis(k, (anggrid[locr,locc]+randturn))
+
 		Ef = an2 + np.sum(exchangelist2)
 	
 		delE = diff(Es,Ef)
@@ -114,8 +119,7 @@ def update_quiver(num, Q, X, Y):
 
 # you need to set blit=False, or the first set of arrows never gets
 # cleared on subsequent frames
-anim = animation.FuncAnimation(fig, update_quiver, frames=lol, fargs=(Q, X, Y), 
-                               interval=1, blit=False)
+anim = animation.FuncAnimation(fig, update_quiver, frames=lol, fargs=(Q, X, Y), interval=1, blit=False)
 
 anim.save(os.getcwd() + r'\AFM3.mp4', fps=60, extra_args=['-vcodec', 'libx264'], savefig_kwargs={'pad_inches':1})
 
