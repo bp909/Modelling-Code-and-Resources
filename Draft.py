@@ -139,7 +139,7 @@ current_datetime = time.strftime("%Y-%m-%d_%H-%M-%S")
 # cleared on subsequent frames
 anim = animation.FuncAnimation(fig, update_quiver, frames=lol, fargs=(Q, X, Y), interval=1, blit=False)
 
-anim.save(os.getcwd() + r'\AFMrun_size-' + str(limit) + '_10xspread-' + str(10*spread) + '_frames-' + str(lol) + '_stepchanges-' + str(step) + '_' + current_datetime + '.mp4', fps=60, extra_args=['-vcodec', 'libx264'], savefig_kwargs={'pad_inches':1})
+anim.save(os.getcwd() + r'Videos\AFMrun_size-' + str(limit) + '_10xspread-' + str(10*spread) + '_frames-' + str(lol) + '_stepchanges-' + str(step) + '_' + current_datetime + '.mp4', fps=60, extra_args=['-vcodec', 'libx264'], savefig_kwargs={'pad_inches':1})
 
 
 
